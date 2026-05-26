@@ -214,8 +214,12 @@ The system uses a **sequential multi-agent pipeline** — each agent has a singl
 | 2b | `ScholarshipFilterAgent` | Full scholarships DataFrame + profile dict | Eligibility-filtered DataFrame |
 | 2c | `MatchingAgent` | Top-20 universities + filtered scholarships | Top-5 matched scholarships |
 | 3 | `LLMReportGenerationAgent` | Top-5 DataFrame + profile dict | Markdown advisory report (str) |
-
 ---
+
+
+## Contributions
+- **Abdallah Beshary** [linkedin](https://www.linkedin.com/in/abdallahbeshary/)
+- **Kirollos Youssef** [linkedin](https://www.linkedin.com/in/kirellos-youssef-samy/)
 
 ## License
 
