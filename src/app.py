@@ -25,9 +25,8 @@ from IPython.display import display, Markdown
 import warnings
 warnings.filterwarnings('ignore')
 
-# ==========================================
 # 1. BACKEND: SCHEMAS & HELPERS
-# ==========================================
+
 class TestScores(BaseModel):
     """Schema for standardized test scores"""
     ielts: Optional[float] = Field(None, description="IELTS band score (0-9)")
@@ -56,17 +55,7 @@ class UserProfile(BaseModel):
     willing_to_return: Optional[bool] = Field(None, description="Indicates whether the applicant is willing to return to their home country after graduation (Yes/No)")
     graduation_certificate: Optional[bool] = Field(None, description="Indicates whether the applicant has a graduation certificate (Yes/No)")
 
-# ==========================================
 # 2. HELPERS
-# ==========================================
-
-def clean_json_output(output_string: str) -> str:
-    output_string = output_string.replace("```json", "").replace("```", "")
-    start = output_string.find('{')
-    end = output_string.rfind('}') + 1
-    if start != -1 and end > start:
-        return output_string[start:end]
-    return output_string
 
 def extract_json(text: str) -> str:
     """Finds the first valid JSON object ({...}) in a string."""
@@ -97,9 +86,8 @@ def extract_text_from_pdf(file_bytes) -> str:
         return ""
 
 
-# ==========================================
 # 3. LOAD MODEL & CHAIN (Notebook Style)
-# ==========================================
+
 @st.cache_resource
 def load_model_and_chain():
     bnb_config = BitsAndBytesConfig(
@@ -137,7 +125,6 @@ def load_model_and_chain():
     ========================
     EXTRACTION RULES
     ========================
-    
     1. ONLY extract information explicitly stated in the text.
        - Do NOT infer, guess, or hallucinate anything.
     
@@ -176,7 +163,6 @@ def load_model_and_chain():
     ========================
     OUTPUT FORMAT RULES
     ========================
-    
     {format_instructions}
     
     - Respond ONLY with valid JSON
@@ -187,7 +173,6 @@ def load_model_and_chain():
     ========================
     INPUT TEXT
     ========================
-    
     {applicant_text}
     """)
     ])
@@ -202,9 +187,8 @@ def load_model_and_chain():
 
 pipe, chain1, tokenizer = load_model_and_chain()
 
-# ==========================================
 # 4. SCHOLARSHIP AGENTS (Direct from Notebook)
-# ==========================================
+
 class DataIngestionAgent:
     def __init__(self, univ_path, scholarship_path):
         self.univ_path = univ_path
@@ -227,18 +211,16 @@ class ProfilingAgent:
     def run(self, user_data):
         """Convert input (dict or UserProfile) into the exact dict format needed by the system"""
         
-        # If input is already a UserProfile object
         if isinstance(user_data, UserProfile):
             return self._profile_to_system_dict(user_data)
-        
-        # If input is raw dictionary (old behavior)
+
         elif isinstance(user_data, dict):
             return self._dict_to_system_dict(user_data)
         
         else:
             raise TypeError("user_data must be dict or UserProfile")
 
-    def _dict_to_system_dict(self, user_data: dict) -> dict:
+    def _dict_to_system_dict(self, data: dict) -> dict:
         """Convert raw dict to system format"""
         def to_bool(val):
             if isinstance(val, bool):
@@ -248,14 +230,14 @@ class ProfilingAgent:
             return False
 
         return {
-            "domain": str(user_data.get("domain", "")),
-            "gpa": float(user_data.get("gpa", 0.0)),
-            "ielts": float(user_data.get("ielts", 6.0)),
-            "degree": str(user_data.get("degree_level", "Masters")),
-            "gre": str(user_data.get("gre", "no")).strip().lower(),
-            "experience": str(user_data.get("experience_years", "no")).strip().lower(),
-            "willing_to_return": str(user_data.get("willing_to_return", "no")).strip().lower(),
-            "graduation_certificate": str(user_data.get("graduation_certificate", "no")).strip().lower()
+            "domain": str(data.get("domain", "")),
+            "gpa": float(data.get("gpa", 0.0)),
+            "ielts": float(data.get("ielts", 0.0)),
+            "degree": str(data.get("degree_level", "Masters")),
+            "gre": str(data.get("gre", "no")).strip().lower(),
+            "experience": str(data.get("experience_years", "no")).strip().lower(),
+            "willing_to_return": str(data.get("willing_to_return", "no")).strip().lower(),
+            "graduation_certificate": str(data.get("graduation_certificate", "no")).strip().lower()
         }
 
     def _profile_to_system_dict(self, profile: UserProfile) -> dict:
@@ -271,10 +253,12 @@ class ProfilingAgent:
             profile.test_scores.gre_awa is not None
         ])
 
+        ielts_val = float(profile.test_scores.ielts) if profile.test_scores.ielts is not None else 0.0
+
         return {
             "domain": str(profile.domain or ""),
             "gpa": float(profile.gpa or 0.0),
-            "ielts": float(profile.test_scores.ielts or 6.0),
+            "ielts": ielts_val,
             "degree": str(profile.degree_level or "Masters"),
             "gre": "yes" if gre_exists else "no",
             "experience": str(profile.experience_years or "no").strip().lower(),
@@ -456,9 +440,7 @@ class ScholarshipSystem:
 
 
 
-# ==========================================
-# 5. REPORT AGENT (Notebook Style)
-# ==========================================
+# 5. REPORT AGENT 
 class LLMReportGenerationAgent:
     def __init__(self, pipe):
         self.pipe = pipe
@@ -576,15 +558,8 @@ Please write a comprehensive final report. You MUST fulfill the following struct
         return report_output
 
 
-
-
-
-
-
-
-# ==========================================
 # SESSION STATE — prefill store
-# ==========================================
+
 DEGREE_OPTIONS = ["Bachelor's", "Master's", "PhD", "Associate's", "Other"]
 DOMAIN_OPTIONS = [ 'Arts & Humanities',
  'Archaeology',
@@ -702,9 +677,9 @@ def _store_prefill(profile: UserProfile):
     st.session_state["_pre"] = pre
     st.session_state["_profile_loaded"] = True
 
-# ==========================================
+
 # UI — PAGE CONFIG & GLOBAL STYLES
-# ==========================================
+
 st.set_page_config(
     page_title="ScholarPath AI",
     page_icon="🎓",
@@ -1016,10 +991,8 @@ else:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-
-# ══════════════════════════════════════════════════════════════════════════════
 # 2 · Personal info
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Personal Info", "📧")
 a1, a2 = st.columns(2)
@@ -1030,9 +1003,8 @@ with a2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # 3 · ACADEMIC BACKGROUND
-# ══════════════════════════════════════════════════════════════════════════════
+
 if st.session_state.get("_profile_loaded"):
     st.markdown('<div class="prefilled-notice">✨ Fields below were auto-filled from your document. Review and adjust as needed.</div>', unsafe_allow_html=True)
 
@@ -1062,9 +1034,8 @@ with c2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # 4 · TEST SCORES
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Test Scores", "📊")
 t1, t2, t3, t4 = st.columns(4)
@@ -1080,9 +1051,8 @@ st.markdown('<p class="chip-hint">Leave at 0 for any test you haven\'t taken.</p
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # 5 · RESEARCH & PROJECTS
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Research & Projects", "🔬")
 r1, r2, r3 = st.columns([3, 1, 1])
@@ -1099,9 +1069,8 @@ with r3:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # 6 · VOLUNTEERING
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Volunteering & Activities", "🤝")
 volunteering = st.text_area(
@@ -1112,9 +1081,8 @@ volunteering = st.text_area(
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # 7 · PREFERENCES
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Preferences", "⚙️")
 p1, p2 = st.columns(2)
@@ -1133,11 +1101,9 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ── Submit ─────────────────────────────────────────────────────────────────
 submitted = st.button("🚀 Find Me Scholarships", key="submit", use_container_width=True)
 
+ 
+### HELPERS
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# HELPERS
-# ══════════════════════════════════════════════════════════════════════════════
 def build_profile_summary() -> str:
     lines = []
     if name:            lines.append(f"Name: {name}")
@@ -1161,9 +1127,8 @@ def build_profile_summary() -> str:
     return "\n".join(lines)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SUBMISSION LOGIC
-# ══════════════════════════════════════════════════════════════════════════════
+### SUBMISSION LOGIC
+
 if submitted:
     st.write("🚀 Button clicked - Starting pipeline...")
     if "user_profile" not in st.session_state or st.session_state.user_profile is None:
@@ -1181,7 +1146,9 @@ if submitted:
         st.stop()
 
     # ── Step 2: Scholarship Pipeline + Report ───────────────────────────────
-    with st.spinner("🔍 Agents 2 & 3 — Matching scholarships and generating report..."):
+    st.success("✅ Matching Completed!")
+
+    with st.spinner("🔍 Wait for Generating Your Report..."):
             # Initialize system
             system = ScholarshipSystem(
                 "/kaggle/input/datasets/abdallahbeshary/data-scholar/Universities.xlsx", 
@@ -1195,8 +1162,6 @@ if submitted:
 
             # Get top scholarships
             top_5 = system.process_request(system_input)
-
-            st.success("✅ Matching Completed!")
             
             display_cols = ['Scholarship Name', 'University / Partners', 'Funding Type', 'Deadline Month']
             available_cols = [col for col in display_cols if col in top_5.columns]
@@ -1206,7 +1171,7 @@ if submitted:
     # ── Step 3: Scholarship Report ───────────────────────────────
             # Rich user profile for the report
             report_user_profile = {
-                "name": "Abdallah",                     # Add if available
+                "name":  name or profile_dict.get("name") or "Applicant",                 # Add if available
                 "domain": user_profile_obj.domain,
                 "gpa": user_profile_obj.gpa,
                 "ielts": user_profile_obj.test_scores.ielts,
@@ -1233,8 +1198,10 @@ if submitted:
                 profile=report_user_profile
             )
 
+            display_name = name or profile_dict.get("name") or "Applicant"
+            
             st.markdown("---")
-            st.markdown(f"## 📄 Scholarship Report for Abdallah")
+            st.markdown(f"## 📄 Scholarship Report for {display_name}")
             st.markdown("---")
 
             tab1, tab2 = st.tabs(["📊 Full Report", "💾 Export Options"])
@@ -1244,7 +1211,7 @@ if submitted:
                 st.markdown(final_report)
             
             with tab2:
-                st.markdown("### 💾 Save Report")
+                st.markdown("### 💾 Download your Report")
                 
                 if st.button("📥 Download as PDF", use_container_width=True):
                     html_body = markdown2.markdown(
@@ -1375,33 +1342,26 @@ if submitted:
                     </html>
                     """
                 
-                    # Write intermediate HTML configuration file temporarily
-                    temp_html_path = "temp_report.html"
-                    with open(temp_html_path, "w", encoding="utf-8") as f:
-                        f.write(full_html_document)
-                    
-                    # 4. Generate the optimized PDF target document
-                    pdf_filename = f"scholarship_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                    HTML(temp_html_path).write_pdf(pdf_filename)
-                    
-                    # قراءة ملف PDF
-                    with open(pdf_filename, "rb") as pdf_file:
-                        pdf_data = pdf_file.read()
-                    
-                    # عرض زر التحميل في Streamlit
-                    st.success(f"✅ PDF report generated successfully!")
-                    
-                    # زر التحميل المباشر
-                    st.download_button(
-                        label="📥 Download PDF Report",
-                        data=pdf_data,
-                        file_name=pdf_filename,
-                        mime="application/pdf",
-                        use_container_width=True
+                    # Generate PDF entirely in memory — no temp files, no weasyprint
+                    pdf_buffer = io.BytesIO()
+                    pisa_status = pisa.CreatePDF(
+                        src=full_html_document,
+                        dest=pdf_buffer,
+                        encoding="utf-8",
                     )
-                    
-                    # تنظيف الملفات المؤقتة
-                    import os
-                    os.remove(temp_html_path)
-                    os.remove(pdf_filename)
-                                
+            
+                    if pisa_status.err:
+                        st.error("❌ PDF generation failed. Please try again.")
+                    else:
+                        pdf_buffer.seek(0)
+                        pdf_filename = f"scholarship_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            
+                        st.success("✅ PDF report generated successfully!")
+                        st.download_button(
+                            label="📥 Download PDF Report",
+                            data=pdf_buffer.read(),
+                            file_name=pdf_filename,
+                            mime="application/pdf",
+                            use_container_width=True,
+                        )
+                                            
