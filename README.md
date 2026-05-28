@@ -139,7 +139,7 @@ Your CV / Personal Statement
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/[username]/scholarship-agent.git
+git clone https://github.com/Bosha-a/scholarship-agent.git
 cd scholarship-agent
 
 # 2. Install Python dependencies
