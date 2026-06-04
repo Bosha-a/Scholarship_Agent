@@ -25,8 +25,9 @@ from IPython.display import display, Markdown
 import warnings
 warnings.filterwarnings('ignore')
 
+# ==========================================
 # 1. BACKEND: SCHEMAS & HELPERS
-
+# ==========================================
 class TestScores(BaseModel):
     """Schema for standardized test scores"""
     ielts: Optional[float] = Field(None, description="IELTS band score (0-9)")
@@ -55,7 +56,9 @@ class UserProfile(BaseModel):
     willing_to_return: Optional[bool] = Field(None, description="Indicates whether the applicant is willing to return to their home country after graduation (Yes/No)")
     graduation_certificate: Optional[bool] = Field(None, description="Indicates whether the applicant has a graduation certificate (Yes/No)")
 
+# ==========================================
 # 2. HELPERS
+# ==========================================
 
 def extract_json(text: str) -> str:
     """Finds the first valid JSON object ({...}) in a string."""
@@ -86,7 +89,9 @@ def extract_text_from_pdf(file_bytes) -> str:
         return ""
 
 
+# ==========================================
 # 3. LOAD MODEL & CHAIN (Notebook Style)
+# ==========================================
 
 @st.cache_resource
 def load_model_and_chain():
@@ -187,7 +192,9 @@ def load_model_and_chain():
 
 pipe, chain1, tokenizer = load_model_and_chain()
 
+# ==========================================
 # 4. SCHOLARSHIP AGENTS (Direct from Notebook)
+# ==========================================
 
 class DataIngestionAgent:
     def __init__(self, univ_path, scholarship_path):
@@ -440,7 +447,9 @@ class ScholarshipSystem:
 
 
 
-# 5. REPORT AGENT 
+# ==========================================
+# 5. REPORT AGENT (Notebook Style)
+# ==========================================
 class LLMReportGenerationAgent:
     def __init__(self, pipe):
         self.pipe = pipe
@@ -558,8 +567,15 @@ Please write a comprehensive final report. You MUST fulfill the following struct
         return report_output
 
 
-# SESSION STATE — prefill store
 
+
+
+
+
+
+# ==========================================
+# SESSION STATE — prefill store
+# ==========================================
 DEGREE_OPTIONS = ["Bachelor's", "Master's", "PhD", "Associate's", "Other"]
 DOMAIN_OPTIONS = [ 'Arts & Humanities',
  'Archaeology',
@@ -677,9 +693,9 @@ def _store_prefill(profile: UserProfile):
     st.session_state["_pre"] = pre
     st.session_state["_profile_loaded"] = True
 
-
+# ==========================================
 # UI — PAGE CONFIG & GLOBAL STYLES
-
+# ==========================================
 st.set_page_config(
     page_title="ScholarPath AI",
     page_icon="🎓",
@@ -938,7 +954,6 @@ def run_extraction(input_text: str):
 # ══════════════════════════════════════════════════════════════════════════════
 # 1 · QUERY SECTION
 # ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Your Query", "✍️")
 
 if "query_mode" not in st.session_state:
@@ -991,9 +1006,10 @@ else:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# 2 · Personal info
 
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════════════════════
+# 2 · Personal info
+# ══════════════════════════════════════════════════════════════════════════════
 section("Personal Info", "📧")
 a1, a2 = st.columns(2)
 with a1:
@@ -1003,12 +1019,12 @@ with a2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
 # 3 · ACADEMIC BACKGROUND
-
+# ══════════════════════════════════════════════════════════════════════════════
 if st.session_state.get("_profile_loaded"):
     st.markdown('<div class="prefilled-notice">✨ Fields below were auto-filled from your document. Review and adjust as needed.</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
 section("Academic Background", "🏛️")
 c1, c2 = st.columns(2)
 with c1:
@@ -1034,9 +1050,9 @@ with c2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
 # 4 · TEST SCORES
-
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════════════════════
 section("Test Scores", "📊")
 t1, t2, t3, t4 = st.columns(4)
 with t1:
@@ -1051,9 +1067,9 @@ st.markdown('<p class="chip-hint">Leave at 0 for any test you haven\'t taken.</p
 st.markdown('</div>', unsafe_allow_html=True)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
 # 5 · RESEARCH & PROJECTS
-
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════════════════════
 section("Research & Projects", "🔬")
 r1, r2, r3 = st.columns([3, 1, 1])
 with r1:
@@ -1069,9 +1085,9 @@ with r3:
 st.markdown('</div>', unsafe_allow_html=True)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
 # 6 · VOLUNTEERING
-
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════════════════════
 section("Volunteering & Activities", "🤝")
 volunteering = st.text_area(
     "vol",
@@ -1081,9 +1097,9 @@ volunteering = st.text_area(
 st.markdown('</div>', unsafe_allow_html=True)
 
 
+# ══════════════════════════════════════════════════════════════════════════════
 # 7 · PREFERENCES
-
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
+# ══════════════════════════════════════════════════════════════════════════════
 section("Preferences", "⚙️")
 p1, p2 = st.columns(2)
 with p1:
@@ -1101,9 +1117,11 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ── Submit ─────────────────────────────────────────────────────────────────
 submitted = st.button("🚀 Find Me Scholarships", key="submit", use_container_width=True)
 
- 
-### HELPERS
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
 def build_profile_summary() -> str:
     lines = []
     if name:            lines.append(f"Name: {name}")
@@ -1127,8 +1145,9 @@ def build_profile_summary() -> str:
     return "\n".join(lines)
 
 
-### SUBMISSION LOGIC
-
+# ══════════════════════════════════════════════════════════════════════════════
+# SUBMISSION LOGIC
+# ══════════════════════════════════════════════════════════════════════════════
 if submitted:
     st.write("🚀 Button clicked - Starting pipeline...")
     if "user_profile" not in st.session_state or st.session_state.user_profile is None:
